@@ -182,6 +182,7 @@ void saveSCD(std::string fileName, Eigen::MatrixXd matrix, std::string delimiter
     const static Eigen::IOFormat the_format(precision, Eigen::DontAlignCols, delimiter, "\n");
  
     std::ofstream file(fileName);
+    ROS_INFO_STREAM("Using file.isopen()");
     if (file.is_open())
     {
         file << matrix.format(the_format);
@@ -362,7 +363,7 @@ void pubPath( void )
     // pub odom and path 
     nav_msgs::Odometry odomAftPGO;
     nav_msgs::Path pathAftPGO;
-    pathAftPGO.header.frame_id = "/camera_init";
+    pathAftPGO.header.frame_id = "camera_init";
     mKF.lock(); 
     // for (int node_idx=0; node_idx < int(keyframePosesUpdated.size()) - 1; node_idx++) // -1 is just delayed visualization (because sometimes mutexed while adding(push_back) a new one)
     for (int node_idx=0; node_idx < recentIdxUpdated; node_idx++) // -1 is just delayed visualization (because sometimes mutexed while adding(push_back) a new one)
@@ -371,8 +372,8 @@ void pubPath( void )
         // const gtsam::Pose3& pose_est = isamCurrentEstimate.at<gtsam::Pose3>(node_idx);
 
         nav_msgs::Odometry odomAftPGOthis;
-        odomAftPGOthis.header.frame_id = "/camera_init";
-        odomAftPGOthis.child_frame_id = "/aft_pgo";
+        odomAftPGOthis.header.frame_id = "camera_init";
+        odomAftPGOthis.child_frame_id = "aft_pgo";
         odomAftPGOthis.header.stamp = ros::Time().fromSec(keyframeTimes.at(node_idx));
         odomAftPGOthis.pose.pose.position.x = pose_est.x;
         odomAftPGOthis.pose.pose.position.y = pose_est.y;
@@ -385,7 +386,7 @@ void pubPath( void )
         poseStampAftPGO.pose = odomAftPGOthis.pose.pose;
 
         pathAftPGO.header.stamp = odomAftPGOthis.header.stamp;
-        pathAftPGO.header.frame_id = "/camera_init";
+        pathAftPGO.header.frame_id = "camera_init";
         pathAftPGO.poses.push_back(poseStampAftPGO);
     }
     mKF.unlock(); 
@@ -505,12 +506,12 @@ std::optional<gtsam::Pose3> doICPVirtualRelative( int _loop_kf_idx, int _curr_kf
     // loop verification 
     sensor_msgs::PointCloud2 cureKeyframeCloudMsg;
     pcl::toROSMsg(*cureKeyframeCloud, cureKeyframeCloudMsg);
-    cureKeyframeCloudMsg.header.frame_id = "/camera_init";
+    cureKeyframeCloudMsg.header.frame_id = "camera_init";
     pubLoopScanLocal.publish(cureKeyframeCloudMsg);
 
     sensor_msgs::PointCloud2 targetKeyframeCloudMsg;
     pcl::toROSMsg(*targetKeyframeCloud, targetKeyframeCloudMsg);
-    targetKeyframeCloudMsg.header.frame_id = "/camera_init";
+    targetKeyframeCloudMsg.header.frame_id = "camera_init";
     pubLoopSubmapLocal.publish(targetKeyframeCloudMsg);
 
     // ICP Settings
@@ -682,6 +683,7 @@ void process_pg()
                     writeEdge({prev_node_idx, curr_node_idx}, relPose, edges_str); // giseop
                     // runISAM2opt();
                 }
+                //ROS_INFO_STREAM("mtxPosegraph.unlock()");
                 mtxPosegraph.unlock();
 
                 if(curr_node_idx % 100 == 0)
@@ -691,12 +693,15 @@ void process_pg()
 
             // save utility 
             std::string curr_node_idx_str = padZeros(curr_node_idx);
-            pcl::io::savePCDFileBinary(pgScansDirectory + curr_node_idx_str + ".pcd", *thisKeyFrame); // scan 
+            // ROS_INFO_STREAM("Trying to open pcd");
+            // std::cout<<pgScansDirectory<<endl;
+            // std::cout<<curr_node_idx_str<<endl;
+            // pcl::io::savePCDFileBinary(pgScansDirectory + curr_node_idx_str + ".pcd", *thisKeyFrame); // scan 
 
-            const auto& curr_scd = scManager.getConstRefRecentSCD();
-            saveSCD(pgSCDsDirectory + curr_node_idx_str + ".scd", curr_scd);
+            // const auto& curr_scd = scManager.getConstRefRecentSCD();
+            // saveSCD(pgSCDsDirectory + curr_node_idx_str + ".scd", curr_scd);
 
-            pgTimeSaveStream << timeLaser << std::endl; // path 
+            // pgTimeSaveStream << timeLaser << std::endl; // path 
         }
 
         // ps. 
@@ -827,7 +832,7 @@ void pubMap(void)
 
     sensor_msgs::PointCloud2 laserCloudMapPGOMsg;
     pcl::toROSMsg(*laserCloudMapPGO, laserCloudMapPGOMsg);
-    laserCloudMapPGOMsg.header.frame_id = "/camera_init";
+    laserCloudMapPGOMsg.header.frame_id = "camera_init";
     pubMapAftPGO.publish(laserCloudMapPGOMsg);
 }
 
@@ -850,7 +855,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 
     // save directories 
-	nh.param<std::string>("save_directory", save_directory, "/"); // pose assignment every k m move 
+	nh.param<std::string>("save_directory", save_directory, "~/"); // pose assignment every k m move 
 
     pgKITTIformat = save_directory + "optimized_poses.txt";
     odomKITTIformat = save_directory + "odom_poses.txt";

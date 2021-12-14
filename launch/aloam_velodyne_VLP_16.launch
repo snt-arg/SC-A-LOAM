@@ -24,13 +24,18 @@
 
     <!--  -->
     <param name="lidar_type" type="string" value="VLP16"/> 
-    <remap from="/velodyne_points" to="/velodyne_points"/>
+    <remap from="/velodyne_points" to="/platform/velodyne_points"/>
+    
     
     <!-- nodes -->
     <node pkg="aloam_velodyne" type="ascanRegistration" name="ascanRegistration" output="screen" />
     <node pkg="aloam_velodyne" type="alaserOdometry" name="alaserOdometry" output="screen" />
-    <node pkg="aloam_velodyne" type="alaserMapping" name="alaserMapping" output="screen" />
-    <node pkg="aloam_velodyne" type="alaserPGO" name="alaserPGO" output="screen" /> <!-- SC-A-LOAM -->
+    
+    <node pkg="aloam_velodyne" type="alaserMapping" name="alaserMapping" output="screen" >
+        <remap from="/laser_odom_to_init" to="/platform/reset_odometry"/>
+    </node>
+    
+    <node pkg="aloam_velodyne" type="alaserPGO" name="alaserPGO" output="screen" />  <!-- SC-A-LOAM -->
 
     <!-- visulaization -->
     <arg name="rviz" default="true" />
